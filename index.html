@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="referrer" content="no-referrer">
+<title>CLUSTER IDE</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root{--bg:#0b0c13;--panel:#11131f;--panel2:#171a2a;--line:#252a45;--text:#e7e9f6;--dim:#8b90b2;--c1:#00c8ff;--c2:#be46ff;--ok:#2ecc71;--warn:#f1c40f;--bad:#ff5c6c;--code:#0d1017;--r:12px}
+[data-theme=light]{--bg:#f5f6fb;--panel:#ffffff;--panel2:#eef0f8;--line:#d9dcee;--text:#1b1e33;--dim:#646a8c;--code:#0d1017}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+.grad{background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.dim{color:var(--dim)}.err{color:var(--bad);min-height:1.3em;margin:.4rem 0 0}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:.42rem .8rem;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--c2)}.btn.primary{background:linear-gradient(90deg,var(--c1),var(--c2));color:#fff;border:0;font-weight:600}
+.btn.sm{padding:.2rem .55rem;font-size:13px}.btn.bad{border-color:var(--bad);color:var(--bad)}
+input,select,textarea{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:.5rem .7rem;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--c2)}
+.overlay{position:fixed;inset:0;background:rgba(5,6,12,.72);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(4px);padding:16px}
+.overlay[hidden],[hidden]{display:none!important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:1.4rem;width:min(440px,100%);box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.card h1{margin:.1rem 0 0;font-size:30px;letter-spacing:.5px}
+.card label{display:block;margin:.8rem 0 0;font-size:13px;color:var(--dim)}.card label input{display:block;width:100%;margin-top:.25rem;color:var(--text)}
+.card .btn.primary{width:100%;margin-top:1rem;padding:.65rem}
+#modalCard{width:min(760px,100%);max-height:88vh;overflow:auto}
+#app{display:grid;grid-template-columns:272px 1fr;grid-template-rows:52px 1fr;height:100%}
+#top{grid-column:1/3;display:flex;align-items:center;gap:.6rem;padding:0 .9rem;border-bottom:1px solid var(--line);background:var(--panel);overflow-x:auto;white-space:nowrap}
+#top .logo{font-weight:800;font-size:18px;letter-spacing:.6px;margin-right:.3rem}
+.chip{display:inline-flex;align-items:center;gap:.35rem;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:.18rem .65rem;font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--dim);display:inline-block}.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+#spacer{flex:1}
+#side{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#side .head{padding:.7rem}#newChat{width:100%}
+#chatList{overflow:auto;padding:0 .5rem .7rem;flex:1}
+.ci{padding:.5rem .6rem;border-radius:9px;cursor:pointer;font-size:14px;border:1px solid transparent}
+.ci:hover{background:var(--panel2)}.ci.on{background:var(--panel2);border-color:var(--c2)}
+.ci .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ci .m{font-size:12px;color:var(--dim)}
+#main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+#feed{flex:1;overflow:auto;padding:1rem 1.2rem 0;scroll-behavior:smooth}
+.wrap{max-width:900px;margin:0 auto}
+.msg{margin:0 0 1.1rem}.msg .who{font-size:12px;color:var(--dim);margin-bottom:.2rem;letter-spacing:.4px}
+.msg.user .bubble{background:linear-gradient(135deg,rgba(0,200,255,.14),rgba(190,70,255,.16));border:1px solid var(--line);border-radius:var(--r);padding:.6rem .85rem;white-space:pre-wrap;word-break:break-word}
+.msg.user .imgs img{max-height:120px;border-radius:8px;margin:.3rem .3rem 0 0;border:1px solid var(--line)}
+.md{word-break:break-word}.md p{margin:.45em 0}.md pre{background:var(--code);color:#e6edf3;border-radius:10px;padding:.7rem .85rem;overflow:auto;position:relative;font-size:13px}
+.md code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}.md :not(pre)>code{background:var(--panel2);padding:.1rem .35rem;border-radius:5px}
+.md table{border-collapse:collapse}.md th,.md td{border:1px solid var(--line);padding:.3rem .6rem}.md a{color:var(--c1)}
+.md pre .copy{position:absolute;top:6px;right:6px;opacity:0;transition:.15s}.md pre:hover .copy{opacity:1}
+details.think{border:1px dashed var(--line);border-radius:10px;padding:.3rem .7rem;margin:.3rem 0;color:var(--dim);font-size:13px}
+details.think .tt{white-space:pre-wrap;max-height:180px;overflow:auto;margin-top:.3rem}
+.tool{border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:10px;margin:.5rem 0;background:var(--panel);overflow:hidden}
+.tool.done{border-left-color:var(--ok)}.tool.fail{border-left-color:var(--bad)}.tool.local{border-left-color:var(--c2)}
+.tool .th{display:flex;gap:.5rem;align-items:center;padding:.35rem .7rem;font-size:13px;background:var(--panel2);cursor:pointer}
+.tool .th .sp{flex:1}.tool .tb{padding:.4rem .7rem;font-size:13px}
+.tool pre{margin:.2rem 0;white-space:pre-wrap;word-break:break-word;max-height:240px;overflow:auto;font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+.tool .res{border-top:1px solid var(--line);color:var(--dim)}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:0 .45rem;color:var(--dim)}
+.foot{font-size:12px;color:var(--dim);margin-top:.3rem}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--c2);border-radius:50%;animation:s 1s linear infinite;vertical-align:-2px;margin-right:.4rem}
+@keyframes s{to{transform:rotate(360deg)}}
+#composer{padding:.6rem 1.2rem 1rem}#cwrap{max-width:900px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:.5rem .6rem}
+#cwrap:focus-within{border-color:var(--c2)}
+#input{width:100%;border:0;background:transparent;resize:none;max-height:220px;padding:.4rem .4rem;font-size:15px}
+.row{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}.row.opts{margin-top:.2rem;font-size:13px;color:var(--dim)}
+.row.opts select{padding:.2rem .4rem;font-size:13px}
+#send{margin-left:auto;width:38px;height:38px;border-radius:50%;border:0;cursor:pointer;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));font-size:18px}
+#send.stop{background:var(--bad)}
+#attach{display:flex;gap:.4rem;flex-wrap:wrap}.att{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:.15rem .5rem;font-size:12px;display:flex;gap:.4rem;align-items:center}
+.att img{height:28px;border-radius:4px}
+#drawer{position:fixed;top:52px;right:0;bottom:0;width:min(560px,100%);background:var(--panel);border-left:1px solid var(--line);transform:translateX(100%);transition:.2s;z-index:20;display:flex;flex-direction:column}
+#drawer.open{transform:none}#drawer .tabs{display:flex;gap:.4rem;padding:.6rem;border-bottom:1px solid var(--line)}#drawer .body{overflow:auto;padding:.8rem;flex:1}
+.mach{border:1px solid var(--line);border-radius:12px;padding:.7rem .8rem;margin-bottom:.8rem;background:var(--panel2)}
+.mach h3{margin:0 0 .4rem;font-size:15px;display:flex;gap:.5rem;align-items:center}.mach .r{display:grid;grid-template-columns:62px 1fr;gap:.2rem .6rem;font-size:13px;align-items:center}
+.bar{height:8px;border-radius:5px;background:var(--line);overflow:hidden}.bar i{display:block;height:100%;background:var(--ok)}.bar i.w{background:var(--warn)}.bar i.h{background:var(--bad)}
+.spark{vertical-align:middle}.mono{font-family:ui-monospace,Menlo,monospace}
+.diff{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--code);color:#d6dbe6;border-radius:8px;padding:.5rem;overflow:auto;max-height:46vh;white-space:pre}
+.diff .a{background:rgba(46,204,113,.18);display:block}.diff .d{background:rgba(255,92,108,.2);display:block}.diff .h{color:#8b90b2;display:block}
+#burger{display:none}
+@media(max-width:820px){#app{grid-template-columns:1fr}#side{position:fixed;top:52px;left:0;bottom:0;width:272px;z-index:15;transform:translateX(-100%);transition:.2s}#side.open{transform:none}#burger{display:inline-block}#top{grid-column:1}}
+</style>
+</head>
+<body>
+
+<div id="login" class="overlay" hidden>
+  <form id="loginForm" class="card" autocomplete="on">
+    <h1 class="grad">CLUSTER IDE</h1>
+    <div class="dim">private cluster AI · your own hardware</div>
+    <label id="baseRow">Cluster address <input id="base" placeholder="https://xxxx.trycloudflare.com" autocapitalize="off" spellcheck="false"></label>
+    <label>Passphrase <input id="pass" type="password" autocomplete="current-password"></label>
+    <label id="codeRow" hidden>Authenticator code <input id="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></label>
+    <button class="btn primary">Sign in</button>
+    <p id="loginErr" class="err"></p>
+    <div class="dim" style="font-size:12px">Your address is the link <code>ide</code> prints, e.g. https://….trycloudflare.com</div>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header id="top">
+    <button id="burger" class="btn sm">☰</button>
+    <span class="logo grad">CLUSTER IDE</span>
+    <span class="chip"><span class="dot" id="dPlan"></span><span id="cPlan">connecting…</span></span>
+    <select id="policy" class="chip" title="Session type">
+      <option value="auto">⚖ Auto · 27B + minions</option><option value="fast">⚡ Fast · 35B</option><option value="strong">🧠 Strong · 27B long thinking</option>
+    </select>
+    <span class="chip" title="Maple minions"><span class="dot" id="dMin"></span><span id="cMin">minions</span></span>
+    <span class="chip" id="cMem" title="AGX board memory">AGX</span>
+    <span id="spacer"></span>
+    <button class="btn sm" id="bMon">📊 Monitor</button>
+    <button class="btn sm" id="bFiles">📁 Files</button>
+    <button class="btn sm" id="bTheme" title="Light / dark">◐</button>
+    <button class="btn sm" id="bOut">Sign out</button>
+  </header>
+
+  <aside id="side">
+    <div class="head"><button class="btn primary" id="newChat">＋ New conversation</button></div>
+    <div id="chatList"></div>
+  </aside>
+
+  <main id="main">
+    <div id="feed"><div class="wrap" id="wrap"></div></div>
+    <div id="composer">
+      <div id="cwrap">
+        <div id="attach"></div>
+        <textarea id="input" rows="1" placeholder="Ask, or describe what to build…   (Enter sends · Shift+Enter new line · paste or drop images and files)"></textarea>
+        <div class="row opts">
+          <button class="btn sm" id="bAttach" title="Attach files or images">📎</button><input id="fileIn" type="file" multiple hidden>
+          <select id="mode" title="Where the AI works"><option value="sandbox">☁ Cluster sandbox</option><option value="folder">📁 My folder</option></select>
+          <button class="btn sm" id="bPick" hidden>Open folder…</button><span id="folderName" class="mono"></span>
+          <select id="effort" title="How long the AI thinks"><option value="auto">thinking: auto</option><option value="low">thinking: low</option><option value="medium">thinking: medium</option><option value="high">thinking: high</option></select>
+          <label id="autoRow" hidden><input type="checkbox" id="autoEdits"> auto-approve file changes</label>
+          <button id="send" title="Send">↑</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <section id="drawer">
+    <div class="tabs"><button class="btn sm" id="tMon">Monitor</button><button class="btn sm" id="tFiles">Workspace files</button><span style="flex:1"></span><button class="btn sm" id="tClose">✕</button></div>
+    <div class="body" id="dBody"></div>
+  </section>
+</div>
+
+<div id="modal" class="overlay" hidden><div class="card" id="modalCard"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const S = { base: "", token: "", exp: 0, chat: null, mode: "sandbox", dir: null, autoEdits: false, running: false, job: null, abort: null, images: [], files: [], status: null, drawer: "", lastQ: "" };
+const LS = { get: k => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }, del: k => { try { localStorage.removeItem(k); } catch (e) {} } };
+const TITLES = { web_search: "🔎 web search", fetch_url: "🌐 read page", run_shell: "💻 shell", write_file: "📝 write file", read_file: "📄 read file", list_files: "📂 list files", edit_file: "✏ edit file",
+  search_files: "🔎 search files", sandbox_python: "🐍 cluster sandbox python", run_python: "🐍 python", delegate_code: "🤖 minion writes code", git_clone: "🐙 git clone", run_on_agx: "⚡ AGX GPU job", git_push: "⬆ git push", github_pr: "🔀 pull request" };
+const LOCAL_TOOLS = ["read_file", "write_file", "edit_file", "list_files", "search_files", "run_shell"];
+const FAIL_RE = /(Traceback \(most recent|exit code (?!0\b)\d+|\bError\b:|could not|command not found|No such file|FAILED|AssertionError)/;
+
+// ------------------------------------------------------------ setup
+(function init() {
+  const dark = !window.matchMedia || window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.theme = LS.get("ide_theme") || (dark ? "dark" : "light");
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (/^https?:\/\//.test(h)) { S.base = h.replace(/\/+$/, ""); LS.set("ide_base", S.base); history.replaceState(null, "", location.pathname + location.search); }
+  else S.base = LS.get("ide_base") || (/^https?:$/.test(location.protocol) && !/github\.io$|localhost$|^$/.test(location.hostname) ? location.origin : "");
+  S.token = LS.get("ide_token"); S.exp = +LS.get("ide_exp") || 0;
+  if (S.base && LS.get("ide_token_base") && LS.get("ide_token_base") !== S.base) { S.token = ""; }
+  $("#loginForm").addEventListener("submit", doLogin);
+  bindUI();
+  if (S.token && S.exp > Date.now()) startApp(); else showLogin("");
+})();
+
+function bindUI() {
+  $("#send").onclick = () => (S.running ? stopRun() : send());
+  $("#input").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); if (!S.running) send(); } if (e.key === "Escape" && S.running) stopRun(); });
+  $("#input").addEventListener("input", autosize);
+  $("#input").addEventListener("paste", e => { const items = [...(e.clipboardData || {}).items || []].filter(i => i.kind === "file"); if (items.length) { e.preventDefault(); items.forEach(i => addAttach(i.getAsFile())); } });
+  document.addEventListener("dragover", e => e.preventDefault());
+  document.addEventListener("drop", e => { e.preventDefault(); [...(e.dataTransfer || {}).files || []].forEach(addAttach); });
+  $("#bAttach").onclick = () => $("#fileIn").click();
+  $("#fileIn").onchange = e => { [...e.target.files].forEach(addAttach); e.target.value = ""; };
+  $("#newChat").onclick = newChat;
+  $("#bTheme").onclick = () => { const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark"; document.documentElement.dataset.theme = t; LS.set("ide_theme", t); };
+  $("#bOut").onclick = logout;
+  $("#burger").onclick = () => $("#side").classList.toggle("open");
+  $("#bMon").onclick = () => openDrawer("mon"); $("#tMon").onclick = () => openDrawer("mon");
+  $("#bFiles").onclick = () => openDrawer("files"); $("#tFiles").onclick = () => openDrawer("files");
+  $("#tClose").onclick = closeDrawer;
+  $("#policy").onchange = e => setPolicy(e.target.value);
+  $("#mode").onchange = e => setMode(e.target.value);
+  $("#bPick").onclick = pickFolder;
+  $("#effort").value = LS.get("ide_effort") || "auto"; $("#effort").onchange = e => LS.set("ide_effort", e.target.value);
+  $("#autoEdits").onchange = e => { S.autoEdits = e.target.checked; };
+  document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); newChat(); } });
+}
+function autosize() { const t = $("#input"); t.style.height = "auto"; t.style.height = Math.min(220, t.scrollHeight) + "px"; }
+
+// ------------------------------------------------------------ api + login
+async function api(path, opt = {}) {
+  const h = Object.assign({}, opt.headers || {});
+  if (S.token) h.Authorization = "Bearer " + S.token;
+  let body = opt.body;
+  if (body && typeof body === "object" && !(body instanceof Blob) && !(body instanceof ArrayBuffer) && !(body instanceof Uint8Array)) { body = JSON.stringify(body); h["Content-Type"] = "application/json"; }
+  const r = await fetch(S.base + path, { method: opt.method || (body !== undefined ? "POST" : "GET"), headers: h, body, signal: opt.signal });
+  if (r.status === 401 && !opt.noauth) { showLogin("Your login expired: sign in again."); throw new Error("401"); }
+  return r;
+}
+async function jget(path) { const r = await api(path); return r.json(); }
+
+async function showLogin(msg) {
+  $("#app").hidden = true; $("#login").hidden = false;
+  $("#loginErr").textContent = msg || "";
+  $("#base").value = S.base; $("#baseRow").hidden = !!S.base && S.base === location.origin;
+  try { if (S.base) { const r = await fetch(S.base + "/auth/info"); const d = await r.json(); $("#codeRow").hidden = !d.code_required; } } catch (e) { $("#loginErr").textContent = msg || "Can't reach the cluster at that address."; }
+  setTimeout(() => ($("#pass").value ? 0 : (S.base ? $("#pass") : $("#base")).focus()), 50);
+}
+async function doLogin(e) {
+  e.preventDefault();
+  const b = $("#base").value.trim().replace(/\/+$/, "");
+  if (b) S.base = /^https?:\/\//.test(b) ? b : "https://" + b;
+  if (!S.base) { $("#loginErr").textContent = "Enter your cluster address."; return; }
+  $("#loginErr").textContent = "";
+  try {
+    const r = await fetch(S.base + "/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ passphrase: $("#pass").value, code: ($("#code").value || "").trim() }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { $("#loginErr").textContent = d.error || "Login failed (" + r.status + ")"; return; }
+    S.token = d.token; S.exp = Date.now() + (d.expires_in || 43200) * 1000 - 60000;
+    LS.set("ide_token", S.token); LS.set("ide_exp", String(S.exp)); LS.set("ide_base", S.base); LS.set("ide_token_base", S.base);
+    $("#pass").value = ""; $("#code").value = "";
+    startApp();
+  } catch (err) { $("#loginErr").textContent = "Can't reach " + S.base + ". Is the address right and the cluster running?"; }
+}
+async function logout() { try { await api("/auth/logout", { body: {}, noauth: true }); } catch (e) {} LS.del("ide_token"); LS.del("ide_exp"); S.token = ""; showLogin(""); }
+
+// ------------------------------------------------------------ app start, status, chats
+let statusTimer = null;
+function startApp() {
+  $("#login").hidden = true; $("#app").hidden = false;
+  S.mode = "sandbox"; $("#mode").value = "sandbox"; setMode("sandbox", true);
+  newChat(true);
+  refreshStatus(); loadChats();
+  clearInterval(statusTimer); statusTimer = setInterval(refreshStatus, 6000);
+}
+function modelName(st) {
+  const f = ((st.planner || {}).file || st.alias || "");
+  if (/27/.test(f)) return ["Qwen3.8-27B uncensored", "strong"];
+  if (/35/.test(f)) return ["Qwen3.6-35B-A3B uncensored", "fast"];
+  return [f || "offline", ""];
+}
+async function refreshStatus() {
+  if ($("#app").hidden) return;
+  try {
+    const st = await jget("/api/ide_status"); S.status = st;
+    const [nm, role] = modelName(st), ok = st.health === "ok";
+    $("#cPlan").textContent = nm + (role ? " · " + role : ""); $("#dPlan").className = "dot " + (ok ? "ok" : "warn");
+    if (document.activeElement !== $("#policy") && !S.switching) $("#policy").value = st.policy || "auto";
+    const mins = st.minions || [], mh = mins.filter(m => m.healthy).length;
+    $("#cMin").textContent = "minions " + mh + "/" + mins.length; $("#dMin").className = "dot " + (mh === mins.length && mh ? "ok" : mh ? "warn" : "bad");
+    const mem = (st.mem_avail_mb || 0) / 1024; $("#cMem").textContent = "AGX " + mem.toFixed(1) + " GB free · GPU " + (st.gpu_temp_c || "?") + "°C";
+    $("#cMem").style.borderColor = mem < 1.5 ? "var(--bad)" : "";
+  } catch (e) { $("#cPlan").textContent = "can't reach the cluster"; $("#dPlan").className = "dot bad"; }
+}
+function ago(ts) { const d = Date.now() / 1000 - ts; return d < 90 ? "just now" : d < 5400 ? Math.round(d / 60) + " min ago" : d < 129600 ? Math.round(d / 3600) + " h ago" : new Date(ts * 1000).toLocaleDateString(); }
+async function loadChats() {
+  try {
+    const cs = await jget("/api/chats"); const box = $("#chatList"); box.innerHTML = "";
+    (cs || []).slice(0, 60).forEach(c => {
+      const d = el("div", "ci" + (S.chat && S.chat.id === c.id ? " on" : ""));
+      d.innerHTML = '<div class="t">' + (c.pending ? "● " : "") + esc(c.title || "(untitled)") + '</div><div class="m">' + c.n + " messages · " + ago(c.updated) + "</div>";
+      d.onclick = () => openChat(c.id); box.appendChild(d);
+    });
+  } catch (e) {}
+}
+function newChat(silent) {
+  if (S.running) return;
+  S.chat = { id: "t" + Date.now().toString(16).slice(-10), title: "" };
+  const w = $("#wrap"); w.innerHTML = "";
+  const hello = el("div", "msg");
+  hello.innerHTML = '<div class="md"><h2 class="grad" style="margin:.2rem 0">What are we building?</h2><p class="dim">The models run on your own cluster. In <b>☁ Cluster sandbox</b> the AI works in a private workspace on the cluster (internet, Python, Git, minion code-writers). ' +
+    'In <b>📁 My folder</b> (Chrome/Edge) you open a folder from this computer and the AI searches, reads and edits those files, asking you before every change. Try: <i>“Find where login is handled in this project and add rate limiting”</i> or <i>“/minion build a CSV-to-JSON converter with tests”</i>.</p></div>';
+  w.appendChild(hello); S.files = []; S.images = []; renderAttach(); loadChats(); if (!silent) $("#input").focus();
+}
+async function openChat(id) {
+  if (S.running) return;
+  try {
+    const c = await jget("/api/chats/" + encodeURIComponent(id));
+    S.chat = { id, title: c.title || "" };
+    const w = $("#wrap"); w.innerHTML = "";
+    (c.messages || []).forEach(m => {
+      if (m.role === "user") addUser(m.content, []);
+      else {
+        const a = new AiMsg();
+        (m.steps || []).forEach(s => { if (s.tool) { a.toolStart({ tool: s.tool.tool, args: s.tool.args || {} }); a.toolDone({ tool: s.tool.tool, result: s.tool.result, seconds: s.tool.seconds }); } });
+        a.seg(m.content || ""); a.finish();
+        if (m.stats && m.stats.tps) a.footer(`⚡ ${m.stats.tps} tok/s · ${m.stats.tokens || 0} tokens${m.model ? " · " + esc(m.model) : ""}`);
+      }
+    });
+    $("#side").classList.remove("open"); loadChats(); scrollDown(true);
+  } catch (e) {}
+}
+
+// ------------------------------------------------------------ session type (policy)
+async function setPolicy(pol, force) {
+  S.switching = true;
+  const m = modal('<h3><span class="spin"></span>Switching to <b>' + esc(pol) + "</b></h3><p class='dim'>The model is loading on the AGX board (about a minute). You can keep reading; sending waits for it.</p>", [], true);
+  try {
+    const r = await api("/api/policy", { body: Object.assign({ policy: pol }, force ? { force: true } : {}) }); const d = await r.json();
+    closeModal();
+    if (r.status === 409 && !force) { const ok = await ask("Switch anyway?", "<p>" + esc(d.error) + "</p>", [["Switch anyway", true, "bad"], ["Cancel", false]]); if (ok) { S.switching = false; return setPolicy(pol, true); } }
+    else if (!r.ok) toast("Could not switch: " + (d.error || r.status));
+  } catch (e) { closeModal(); }
+  S.switching = false; refreshStatus();
+}
+
+// ------------------------------------------------------------ attachments
+function addAttach(f) {
+  if (!f) return;
+  if (f.type.startsWith("image/")) {
+    if (f.size > 6e6) return toast("Image over 6 MB skipped");
+    const fr = new FileReader(); fr.onload = () => { S.images.push({ name: f.name || "image", data: fr.result }); renderAttach(); }; fr.readAsDataURL(f);
+  } else { if (f.size > 8e6) return toast(f.name + " is over 8 MB"); S.files.push(f); renderAttach(); }
+}
+function renderAttach() {
+  const a = $("#attach"); a.innerHTML = "";
+  S.images.forEach((im, i) => { const d = el("span", "att", `<img src="${im.data}"><span>${esc(im.name)}</span><a href="#" data-i="${i}" style="color:var(--bad)">✕</a>`); d.querySelector("a").onclick = e => { e.preventDefault(); S.images.splice(i, 1); renderAttach(); }; a.appendChild(d); });
+  S.files.forEach((f, i) => { const d = el("span", "att", `📎 ${esc(f.name)} <a href="#" style="color:var(--bad)">✕</a>`); d.querySelector("a").onclick = e => { e.preventDefault(); S.files.splice(i, 1); renderAttach(); }; a.appendChild(d); });
+}
+
+// ------------------------------------------------------------ working mode
+function setMode(m, quiet) {
+  S.mode = m; $("#bPick").hidden = m !== "folder"; $("#autoRow").hidden = m !== "folder"; $("#folderName").textContent = m === "folder" && S.dir ? "📁 " + S.dir.name : "";
+  if (m === "folder" && !window.showDirectoryPicker) { toast("Folder access needs Chrome, Edge or another Chromium browser."); $("#mode").value = "sandbox"; S.mode = "sandbox"; $("#bPick").hidden = true; $("#autoRow").hidden = true; return; }
+  if (m === "folder" && !S.dir && !quiet) pickFolder();
+}
+async function pickFolder() {
+  try { S.dir = await window.showDirectoryPicker({ mode: "readwrite" }); $("#folderName").textContent = "📁 " + S.dir.name; toast("Working in “" + S.dir.name + "”: the AI can read and search it, and asks before changing anything."); }
+  catch (e) { if (!S.dir) { $("#mode").value = "sandbox"; setMode("sandbox", true); } }
+}
+
+// ------------------------------------------------------------ rendering messages
+function scrollDown(force) { const f = $("#feed"); if (force || f.scrollHeight - f.scrollTop - f.clientHeight < 220) f.scrollTop = f.scrollHeight; }
+function md(text) { try { return DOMPurify.sanitize(marked.parse(text || "", { gfm: true })); } catch (e) { return "<pre>" + esc(text) + "</pre>"; } }
+function decorate(root) {
+  root.querySelectorAll("pre").forEach(pre => {
+    const code = pre.querySelector("code"); if (code && window.hljs) { try { hljs.highlightElement(code); } catch (e) {} }
+    if (!pre.querySelector(".copy")) { const b = el("button", "btn sm copy", "Copy"); b.onclick = () => { navigator.clipboard.writeText(pre.innerText.replace(/\nCopy$/, "")); b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1200); }; pre.appendChild(b); }
+  });
+  root.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
+}
+function addUser(text, images, notes) {
+  const m = el("div", "msg user"); m.innerHTML = '<div class="who">YOU</div>';
+  if ((images || []).length) { const d = el("div", "imgs"); images.forEach(u => { const i = el("img"); i.src = u; d.appendChild(i); }); m.appendChild(d); }
+  const b = el("div", "bubble"); b.textContent = text + ((notes || []).length ? "\n📎 " + notes.join(", ") : ""); m.appendChild(b);
+  $("#wrap").appendChild(m); scrollDown(true);
+}
+class AiMsg {
+  constructor() { this.root = el("div", "msg ai"); this.root.innerHTML = '<div class="who">CLUSTER IDE</div>'; $("#wrap").appendChild(this.root); this.thinkEl = null; this.thinkText = ""; this.cur = null; this.curText = ""; this.pending = []; this.raf = 0; this.spinner = null; this.t0 = Date.now(); this.tools = 0; this.files = []; this.status("reading"); }
+  status(s) { if (!this.spinner) { this.spinner = el("div", "foot"); this.root.appendChild(this.spinner); } this.spinner.innerHTML = '<span class="spin"></span>' + esc(s) + " · " + Math.round((Date.now() - this.t0) / 1000) + "s"; this.label = s; this.root.appendChild(this.spinner); }
+  tick() { if (this.spinner && this.spinner.isConnected) this.status(this.label || "working"); }
+  think(t) {
+    if (!this.thinkEl) { this.thinkEl = el("details", "think", "<summary>💭 thinking</summary><div class='tt'></div>"); this.root.insertBefore(this.thinkEl, this.spinner); }
+    this.thinkText += t; this.thinkEl.querySelector(".tt").textContent = this.thinkText.slice(-5000); this.label = "thinking";
+  }
+  seg(t) { if (!this.cur) { this.cur = el("div", "md"); this.curText = ""; this.root.insertBefore(this.cur, this.spinner); } this.curText += t; if (!this.raf) this.raf = setTimeout(() => { this.raf = 0; this.paint(); }, 90); this.label = "writing"; }
+  paint() { if (this.cur) { this.cur.innerHTML = md(this.curText); scrollDown(); } }
+  endSeg() { if (this.cur) { clearTimeout(this.raf); this.raf = 0; this.cur.innerHTML = md(this.curText); decorate(this.cur); this.cur = null; this.curText = ""; } if (this.thinkEl) { this.thinkEl = null; this.thinkText = ""; } }
+  toolStart(ev) {
+    this.endSeg(); this.tools++;
+    const a = ev.args || {}, local = LOCAL_TOOLS.includes(ev.tool) && S.mode === "folder";
+    const card = el("div", "tool" + (local ? " local" : "")); card.dataset.tool = ev.tool;
+    let body = "";
+    if (ev.tool === "run_shell") body = "<pre>" + esc(a.command || "") + "</pre>";
+    else if (ev.tool === "write_file") { const L = (a.content || "").split("\n"); body = "<b>" + esc(a.path || "") + "</b> · " + L.length + " lines<pre>" + esc(L.slice(0, 14).join("\n")) + (L.length > 14 ? "\n…" : "") + "</pre>"; if (a.path) this.files.push(a.path); }
+    else if (ev.tool === "edit_file") body = "<b>" + esc(a.path || "") + "</b>";
+    else if (ev.tool === "delegate_code") { body = "<pre>" + esc((a.task || "").slice(0, 700)) + "</pre>" + (a.write_to ? "→ <b>" + esc(a.write_to) + "</b>" : ""); if (a.write_to) this.files.push(a.write_to); }
+    else if (ev.tool === "run_python" || ev.tool === "sandbox_python") body = "<pre>" + esc((a.code || "").slice(0, 900)) + "</pre>";
+    else body = esc(a.query || a.url || a.path || a.pattern || a.command || JSON.stringify(a).slice(0, 300));
+    card.innerHTML = '<div class="th"><span>' + (TITLES[ev.tool] || esc(ev.tool)) + '</span>' + (local ? '<span class="tag">your folder</span>' : "") + '<span class="sp"></span><span class="tm dim"></span></div><div class="tb">' + body + "</div>";
+    this.root.insertBefore(card, this.spinner); this.pending.push(card); this.label = "running " + (TITLES[ev.tool] || ev.tool); scrollDown();
+  }
+  toolDone(ev) {
+    const i = this.pending.findIndex(c => c.dataset.tool === ev.tool); const card = i >= 0 ? this.pending.splice(i, 1)[0] : null; if (!card) return;
+    const res = String(ev.result == null ? "" : ev.result), bad = FAIL_RE.test(res.slice(-1500));
+    card.classList.add(bad ? "fail" : "done"); card.querySelector(".tm").textContent = (ev.seconds != null ? ev.seconds + "s" : "");
+    const r = el("div", "tb res"), short = res.length > 1400 ? res.slice(0, 1400) + "\n…" : res;
+    r.innerHTML = "<pre>" + esc(short) + "</pre>" + (res.length > 1400 ? '<a href="#" class="dim">show all</a>' : "");
+    if (res.length > 1400) r.querySelector("a").onclick = e => { e.preventDefault(); r.querySelector("pre").textContent = res; e.target.remove(); };
+    card.appendChild(r); card.querySelector(".th").onclick = () => (r.hidden = !r.hidden); this.label = "reading"; scrollDown();
+  }
+  footer(h) { const f = el("div", "foot", h); this.root.appendChild(f); }
+  finish() { this.endSeg(); if (this.spinner) { this.spinner.remove(); this.spinner = null; } }
+}
+
+// ------------------------------------------------------------ sending and streaming
+async function uploadFile(f) {
+  const r = await api(`/api/upload?chat=${encodeURIComponent(S.chat.id)}&path=${encodeURIComponent("uploads/" + f.name)}`, { body: new Uint8Array(await f.arrayBuffer()), headers: { "Content-Type": "application/octet-stream" } });
+  if (!r.ok) throw new Error("upload failed");
+}
+async function localInfo() {
+  let notes = "";
+  for (const fn of ["IDE.md", "AGENTS.md", "CLAUDE.md"]) { try { notes += "[" + fn + "]\n" + (await readText(fn)).slice(0, 6000) + "\n"; } catch (e) {} }
+  const ua = navigator.userAgentData && navigator.userAgentData.platform || navigator.platform || "browser";
+  return { os: ua + " (web browser)", shell: "none", cwd: S.dir.name, name: S.dir.name, git: "", notes, no_shell: "1" };
+}
+async function send(textOverride) {
+  const raw = (textOverride != null ? textOverride : $("#input").value).trim();
+  if (!raw || S.running) return;
+  if (S.mode === "folder" && !S.dir) { await pickFolder(); if (!S.dir) return; }
+  let q = raw, shown = raw;
+  if (/^\/minions?\s+\S/.test(raw)) q = "[minion mode] Use your Maple minions for this: split the work into independent pieces (files or functions), call delegate_code once per piece IN ONE REPLY so both minion machines write code in parallel, give each a precise spec, the project files it must match and a write_to path in my project, then read the results, fix problems, check them, and report what you did. Task: " + raw.replace(/^\/minions?\s+/, "");
+  const images = S.images.map(i => i.data), names = [];
+  try { for (const f of S.files) { await uploadFile(f); names.push("uploads/" + f.name); } } catch (e) { return toast("Upload failed: " + e.message); }
+  if (names.length) q += "\n\n(files attached in the workspace: " + names.join(", ") + ")";
+  addUser(shown, images, names); $("#input").value = ""; autosize(); S.images = []; S.files = []; renderAttach(); S.lastQ = raw;
+  const body = { chat_id: S.chat.id, title: S.chat.title || shown.slice(0, 60), messages: [{ role: "user", content: q }] };
+  if (images.length) body.images = images;
+  const eff = $("#effort").value; if (eff !== "auto") body.effort = eff;
+  if (S.mode === "folder" && S.dir) body.local = await localInfo();
+  const ai = new AiMsg(); S.ai = ai;
+  let jid;
+  try { const r = await api("/api/chat_start", { body }); const d = await r.json(); if (!r.ok) { ai.finish(); ai.footer("⚠ " + esc(d.error || r.status)); return; } jid = d.id; }
+  catch (e) { ai.finish(); ai.footer("⚠ can't reach the cluster"); return; }
+  S.chat.title = S.chat.title || shown.slice(0, 60); S.job = jid; setRunning(true);
+  const tick = setInterval(() => ai.tick(), 1000);
+  try { await stream(jid, ai); } finally { clearInterval(tick); setRunning(false); ai.finish(); loadChats(); refreshStatus(); }
+}
+function setRunning(v) { S.running = v; const b = $("#send"); b.textContent = v ? "■" : "↑"; b.className = v ? "stop" : ""; b.title = v ? "Stop" : "Send"; }
+async function stopRun() { if (S.abort) S.abort.abort(); S.stopped = true; try { await api("/api/chat_cancel?id=" + S.job, { body: {} }); } catch (e) {} }
+async function stream(jid, ai) {
+  let seen = 0, finished = false; S.stopped = false; const t0 = Date.now(); let stats = null, total = 0;
+  while (!finished && !S.stopped) {
+    S.abort = new AbortController();
+    try {
+      const r = await api(`/api/chat_events?id=${jid}&from=${seen}&poll=1500`, { signal: S.abort.signal });
+      if (r.status === 404) { ai.footer("⚠ the server lost this question (was it restarted?)"); return; }
+      const reader = r.body.getReader(), dec = new TextDecoder(); let buf = "";
+      for (;;) {
+        const { value, done } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true }); let i;
+        while ((i = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1); if (!line) continue;
+          let ev; try { ev = JSON.parse(line); } catch (e) { continue; }
+          if (ev.type === "ping") continue; seen++;
+          switch (ev.type) {
+            case "thinking": ai.think(ev.text); break;
+            case "token": ai.seg(ev.text); break;
+            case "tool_start": ai.toolStart(ev); break;
+            case "tool": ai.toolDone(ev); break;
+            case "stats": stats = ev; total += ev.tokens || 0; break;
+            case "permission": await permission(ev); break;
+            case "client_tool": await runLocalTool(ev); break;
+            case "done": if (ev.answer && !ai.curText && !ai.tools) ai.seg(ev.answer); else if (ev.answer && ai.curText !== ev.answer && ai.cur) { ai.curText = ev.answer; } finished = true; break;
+            case "error": ai.footer("⚠ " + esc(ev.error || "error")); finished = true; break;
+          }
+          if (finished) break;
+        }
+        if (finished) break;
+      }
+    } catch (e) { if (S.stopped || e.name === "AbortError") break; if (String(e.message) === "401") return; ai.label = "connection dropped, reconnecting"; await sleep(1500); }
+  }
+  ai.endSeg();
+  if (S.stopped) ai.footer("■ stopped");
+  else if (stats) { const files = ai.files.length ? " · 📁 " + esc([...new Set(ai.files)].slice(0, 6).join(", ")) : ""; ai.footer(`⚡ <b>${stats.tps}</b> tok/s · ${total} tokens · read ${stats.prompt_tokens} prompt tokens @ ${stats.prompt_tps}/s · ${ai.tools} tool calls · ${((Date.now() - t0) / 1000).toFixed(1)}s${files}`); }
+}
+
+// ------------------------------------------------------------ modals
+function modal(html, buttons, nobuttons) {
+  const c = $("#modalCard"); c.innerHTML = html; $("#modal").hidden = false;
+  if (buttons && buttons.length) { const row = el("div", "row"); row.style.marginTop = ".8rem"; buttons.forEach(([label, , cls], i) => { const b = el("button", "btn " + (cls || ""), esc(label)); b.dataset.i = i; row.appendChild(b); }); c.appendChild(row); }
+  return c;
+}
+function closeModal() { $("#modal").hidden = true; }
+function ask(title, bodyHtml, buttons) {
+  return new Promise(res => { const c = modal("<h3 style='margin-top:0'>" + title + "</h3>" + bodyHtml, buttons); c.querySelectorAll(".row .btn").forEach(b => (b.onclick = () => { closeModal(); res(buttons[+b.dataset.i][1]); })); });
+}
+function toast(msg) { const t = el("div", "", esc(msg)); t.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--c2);border-radius:10px;padding:.55rem .9rem;z-index:99;max-width:90vw;box-shadow:0 8px 30px rgba(0,0,0,.4)"; document.body.appendChild(t); setTimeout(() => t.remove(), 5200); }
+async function permission(ev) {
+  const d = await ask("🔐 The AI wants to connect to a website", "<p><b>" + esc(ev.site) + "</b> <span class='dim'>" + esc(ev.host && ev.host !== ev.site ? "(" + ev.host + ")" : "") + "</span></p>",
+    [["Allow for this conversation", "chat"], ["Always allow", "always"], ["Deny", "deny", "bad"]]);
+  try { await api("/api/permission", { body: { id: ev.id, decision: d } }); } catch (e) {}
+}
+
+// ------------------------------------------------------------ "My folder": the AI's file tools run in this browser
+const SKIP = new Set([".git", "node_modules", "__pycache__", ".venv", "venv", ".idea", "dist", "build", ".next", "target"]);
+const SECRET = /(^\.env($|\.)|^id_(rsa|ed25519|ecdsa)|\.pem$|\.key$|^credentials$|^\.netrc$|^\.npmrc$|^secrets?\.|\.p12$|\.pfx$)/i;
+function splitPath(p) { const out = []; for (const s of String(p || ".").replace(/\\/g, "/").split("/")) { if (!s || s === ".") continue; if (s === "..") throw new Error("'..' is not allowed: stay inside the project folder"); out.push(s); } return out; }
+async function dirAt(parts, create) { let d = S.dir; for (const p of parts) d = await d.getDirectoryHandle(p, { create: !!create }); return d; }
+async function fileAt(path, create) { const parts = splitPath(path); if (!parts.length) throw new Error("empty path"); const name = parts.pop(); return (await dirAt(parts, create)).getFileHandle(name, { create: !!create }); }
+async function readText(path) { const f = await (await fileAt(path)).getFile(); if (f.size > 3e6) throw new Error(path + " is " + (f.size / 1e6).toFixed(1) + " MB: too large to read"); return f.text(); }
+async function writeText(path, text) { const w = await (await fileAt(path, true)).createWritable(); await w.write(text); await w.close(); }
+async function* walk(dir, prefix, depth) { for await (const [name, h] of dir.entries()) { if (h.kind === "directory") { if (SKIP.has(name) || name.startsWith(".")) continue; yield { path: prefix + name, dir: true }; if (depth > 1) yield* walk(h, prefix + name + "/", depth - 1); } else yield { path: prefix + name, handle: h }; } }
+function lineDiff(a, b) {
+  const A = a.split("\n"), B = b.split("\n"); let s = 0; while (s < A.length && s < B.length && A[s] === B[s]) s++;
+  let ea = A.length, eb = B.length; while (ea > s && eb > s && A[ea - 1] === B[eb - 1]) { ea--; eb--; }
+  const x = A.slice(s, ea), y = B.slice(s, eb), ops = [];
+  for (let i = Math.max(0, s - 3); i < s; i++) ops.push([" ", A[i]]);
+  if (x.length * y.length > 3e6) { x.forEach(l => ops.push(["-", l])); y.forEach(l => ops.push(["+", l])); }
+  else { const n = x.length, m = y.length, T = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) T[i][j] = x[i] === y[j] ? T[i + 1][j + 1] + 1 : Math.max(T[i + 1][j], T[i][j + 1]);
+    let i = 0, j = 0; while (i < n && j < m) { if (x[i] === y[j]) { ops.push([" ", x[i]]); i++; j++; } else if (T[i + 1][j] >= T[i][j + 1]) ops.push(["-", x[i++]]); else ops.push(["+", y[j++]]); }
+    while (i < n) ops.push(["-", x[i++]]); while (j < m) ops.push(["+", y[j++]]); }
+  for (let i = ea; i < Math.min(A.length, ea + 3); i++) ops.push([" ", A[i]]);
+  return ops;
+}
+function diffHtml(ops) { let out = "", n = 0; for (const [t, l] of ops) { if (n++ > 160) { out += "<span class=h>…</span>"; break; } out += `<span class="${t === "+" ? "a" : t === "-" ? "d" : ""}">${esc(t + " " + l)}</span>`; } return '<div class="diff">' + out + "</div>"; }
+async function approve(title, bodyHtml) {
+  if (S.autoEdits) return true;
+  const d = await ask(title, bodyHtml, [["Apply", "y"], ["Apply this and all further changes", "a"], ["Decline", "n", "bad"]]);
+  if (d === "a") { S.autoEdits = true; $("#autoEdits").checked = true; }
+  return d === "y" || d === "a";
+}
+const LT = {
+  async read_file(a) {
+    if (SECRET.test((a.path || "").split("/").pop())) { const ok = await ask("⚠ The AI wants to read " + esc(a.path), "<p>This file may contain secrets. Send it to the model?</p>", [["Send it", true], ["Don't", false, "bad"]]); if (!ok) return "The user declined to share this file (it may contain secrets)."; }
+    const text = await readText(a.path); if (/\0/.test(text.slice(0, 8000))) return a.path + " is a binary file.";
+    const L = text.split("\n"), off = Math.max(1, +a.offset || 1), lim = Math.min(+a.limit || 400, 1500), chunk = L.slice(off - 1, off - 1 + lim);
+    let out = chunk.map((l, i) => String(off + i).padStart(6) + "\t" + l).join("\n"); if (out.length > 30000) out = out.slice(0, 30000) + "\n…(cut)";
+    return out + `\n[${a.path}: lines ${off}-${off + chunk.length - 1} of ${L.length}${off + chunk.length - 1 < L.length ? " · more: offset=" + (off + chunk.length) : ""}]`;
+  },
+  async list_files(a) {
+    const parts = splitPath(a.path || "."), base = await dirAt(parts), depth = Math.max(1, Math.min(+a.depth || 2, 5)), out = []; let n = 0;
+    for await (const e of walk(base, "", depth)) { const ind = "  ".repeat(e.path.split("/").length - 1); if (e.dir) out.push(ind + e.path.split("/").pop() + "/"); else { const f = await e.handle.getFile(); out.push(ind + e.path.split("/").pop() + "  (" + f.size + " B)"); if (++n > 300) { out.push("…(more files not shown)"); break; } } }
+    return (parts.join("/") || ".") + "/\n" + (out.join("\n") || "(empty)");
+  },
+  async search_files(a) {
+    let rx; try { rx = new RegExp(a.pattern, a.ignore_case ? "i" : ""); } catch (e) { return "Error: bad regular expression: " + e.message; }
+    const glob = a.glob ? new RegExp("^" + a.glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".") + "$") : null, hits = []; let scanned = 0; const t0 = Date.now();
+    const base = await dirAt(splitPath(a.path || "."));
+    for await (const e of walk(base, "", 12)) { if (e.dir || !e.handle) continue; const nm = e.path.split("/").pop(); if (nm.startsWith(".") || (glob && !glob.test(nm))) continue;
+      const f = await e.handle.getFile(); if (f.size > 1.5e6) continue; const t = await f.text(); if (/\0/.test(t.slice(0, 4000))) continue; scanned++;
+      const L = t.split("\n"); for (let i = 0; i < L.length; i++) if (rx.test(L[i])) { hits.push(e.path + ":" + (i + 1) + ": " + L[i].trim().slice(0, 200)); if (hits.length >= 80) break; }
+      if (hits.length >= 80 || Date.now() - t0 > 15000) break; }
+    return (hits.join("\n") || "no matches") + `\n[${hits.length} match(es) in ${scanned} files]`;
+  },
+  async edit_file(a) {
+    if (splitPath(a.path).includes(".git")) return "Error: writing inside .git is not allowed";
+    let old; try { old = await readText(a.path); } catch (e) { return "Error: no such file: " + a.path + " (use write_file to create it)"; }
+    const o = a.old_string, n = a.new_string; if (o === n) return "Error: old_string and new_string are identical";
+    const cnt = old.split(o).length - 1; if (!cnt) return "Error: old_string was not found: it must match the file exactly, including indentation (read_file it again)";
+    if (cnt > 1 && !a.replace_all) return `Error: old_string appears ${cnt} times; add surrounding lines to make it unique, or set replace_all`;
+    const next = a.replace_all ? old.split(o).join(n) : old.replace(o, () => n);
+    if (!(await approve("✏ Edit <code>" + esc(a.path) + "</code>", diffHtml(lineDiff(old, next))))) return "The user declined this edit.";
+    await writeText(a.path, next); return `edited ${a.path}: ${a.replace_all ? cnt : 1} replacement(s)`;
+  },
+  async write_file(a) {
+    if (splitPath(a.path).includes(".git")) return "Error: writing inside .git is not allowed";
+    let old = null; try { old = await readText(a.path); } catch (e) {}
+    const by = a.by === "minion" ? " (written by a minion)" : "", body = old == null ? '<div class="diff">' + esc((a.content || "").split("\n").slice(0, 60).join("\n")) + "</div>" : diffHtml(lineDiff(old, a.content || ""));
+    if (!(await approve((old == null ? "📝 New file <code>" : "📝 Overwrite <code>") + esc(a.path) + "</code>" + by, body))) return "The user declined this change.";
+    await writeText(a.path, a.content || ""); return `wrote ${a.path} (${new Blob([a.content || ""]).size} bytes)`;
+  },
+};
+async function runLocalTool(ev) {
+  let result; const fn = LT[ev.tool];
+  try { result = S.dir && fn ? await fn(ev.args || {}) : "The user's folder is not open in the browser (or this tool is not available in the browser)."; }
+  catch (e) { result = "Error: " + (e && e.message || e); }
+  for (let i = 0; i < 5; i++) { try { const r = await api("/api/tool_result", { body: { id: ev.id, result } }); if (r.ok) return; } catch (e) {} await sleep(1500); }
+}
+
+// ------------------------------------------------------------ drawer: monitor + workspace files
+let monTimer = null;
+function openDrawer(which) { S.drawer = which; $("#drawer").classList.add("open"); renderDrawer(); }
+function closeDrawer() { S.drawer = ""; $("#drawer").classList.remove("open"); clearInterval(monTimer); }
+function renderDrawer() { clearInterval(monTimer); if (S.drawer === "mon") { monitor(); monTimer = setInterval(monitor, 1500); } else filesPanel(); }
+function spark(vals, w, h, color, max) { vals = (vals || []).slice(-60); if (vals.length < 2) return ""; const m = max || Math.max(...vals, 1), pts = vals.map((v, i) => (i / (vals.length - 1) * w).toFixed(1) + "," + (h - Math.min(1, v / m) * h).toFixed(1)).join(" "); return `<svg class="spark" width="${w}" height="${h}"><polyline fill="none" stroke="${color}" stroke-width="1.6" points="${pts}"/></svg>`; }
+function bar(p) { p = Math.max(0, Math.min(100, p || 0)); return `<div class="bar"><i class="${p > 85 ? "h" : p > 60 ? "w" : ""}" style="width:${p}%"></i></div>`; }
+const rate = b => ((b || 0) >= 1e5 ? ((b / 1e6).toFixed(1) + " MB/s") : (Math.round((b || 0) / 1e3) + " KB/s"));
+async function monitor() {
+  if (S.drawer !== "mon") return;
+  try {
+    const d = await jget("/api/top"), body = $("#dBody"); let h = "";
+    (d.nodes || []).forEach(n => {
+      const agx = n.kind === "agx", ram = n.ram || {}, used = ram.used_mb || 0, tot = Math.max(ram.total_mb || 1, 1), hs = n.hist || {};
+      let rows = `<span>CPU</span><span>${bar(n.cpu_pct)}<span class="dim mono">${(n.cpu_pct || 0).toFixed(0)}% ${spark(hs.cpu, 90, 18, "#00c8ff", 100)}</span></span>`;
+      rows += `<span>MEM</span><span>${bar(used / tot * 100)}<span class="dim mono">${(used / 1024).toFixed(1)} / ${(tot / 1024).toFixed(0)} GB</span></span>`;
+      if (agx) { rows += `<span>GPU</span><span>${bar(n.gpu_load_pct)}<span class="dim mono">${(n.gpu_load_pct || 0).toFixed(0)}% ${spark(hs.gpu, 90, 18, "#be46ff", 100)}</span></span>`;
+        const t = n.temps || {}; rows += `<span>temp</span><span class="mono">cpu ${t.cpu}° · gpu ${t.gpu}° · soc ${t.soc}° · tj ${t.tj}°</span><span>power</span><span class="dim">n/a (the board's power meter isn't visible to Linux)</span>`; }
+      else { rows += `<span>iGPU</span><span class="mono">${n.gpu_mhz || 0}/${n.gpu_max_mhz || 0} MHz</span><span>temp</span><span class="mono">cpu ${n.temp_cpu}° · ssd ${n.temp_ssd}° · fan ${n.fan_rpm} rpm</span>`;
+        rows += `<span>power</span><span class="mono">${n.power_w != null ? n.power_w.toFixed(1) + " W " + spark(hs.power, 90, 18, "#f1c40f") + ' <span class="dim">CPU package</span>' : "n/a"}</span>`; }
+      rows += `<span>net</span><span class="mono">↓ ${rate((n.net || {}).rx_bps)} · ↑ ${rate((n.net || {}).tx_bps)}</span><span>disk</span><span class="mono">${(n.disk || {}).free_gb} GB free</span>`;
+      const pr = (n.ai_processes || []).slice(0, 3).map(p => `${esc(p.model || p.program)} ${(p.ram_mb / 1024).toFixed(1)} GB · cpu ${p.cpu_pct}%`).join("<br>") || "idle";
+      rows += `<span>work</span><span class="mono">${pr}</span>`;
+      h += `<div class="mach"><h3><span class="dot ${n.online ? "ok" : "bad"}"></span>${esc(n.name)} <span class="dim" style="font-weight:400;font-size:12px">${esc((n.role || "").slice(0, 40))}</span></h3><div class="r">${rows}</div></div>`;
+    });
+    const ai = d.ai || {}, st = d.status || {}, hh = ai.hist || {};
+    h += `<div class="mach"><h3>AI cluster</h3><div class="r"><span>planner</span><span class="mono">${esc(((ai.model || {}).name) || st.alias || "?")} · ${esc(st.policy || "")} · <b>${esc(ai.phase || "")}</b></span>
+      <span>writing</span><span class="mono">${(ai.gen_tps || 0).toFixed(1)} tok/s ${spark(hh.gen, 120, 18, "#2ecc71")}</span><span>reading</span><span class="mono">${(ai.prefill_tps || 0).toFixed(0)} tok/s ${spark(hh.prefill, 120, 18, "#f1c40f")}</span>
+      <span>minions</span><span class="mono">${((st.minions || []).map(m => (m.healthy ? "●" : "○") + " busy " + m.active + " · served " + m.served)).join("  |  ")}</span></div></div>`;
+    body.innerHTML = h;
+  } catch (e) {}
+}
+async function filesPanel() {
+  const body = $("#dBody");
+  if (S.mode === "folder") { body.innerHTML = "<p class='dim'>You're working in <b>" + esc(S.dir ? S.dir.name : "(no folder)") + "</b> on this computer; the AI's changes are in that folder itself.</p>"; return; }
+  try {
+    const fs = await jget("/api/files/" + encodeURIComponent(S.chat.id)); body.innerHTML = "";
+    if (!fs.length) { body.innerHTML = "<p class='dim'>No files yet in this conversation's workspace. Ask the AI to create or run something, or attach a file with 📎.</p>"; return; }
+    fs.filter(f => !f.dir).forEach(f => { const row = el("div", "row"); row.style.cssText = "justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--line)"; row.innerHTML = `<span class="mono">${esc(f.path)}</span><span class="dim">${f.size} B</span>`;
+      const b = el("button", "btn sm", "Download"); b.onclick = async () => { const r = await api("/api/files/" + encodeURIComponent(S.chat.id) + "/" + f.path.split("/").map(encodeURIComponent).join("/") + "?download=1"); const u = URL.createObjectURL(await r.blob()); const a = el("a"); a.href = u; a.download = f.path.split("/").pop(); a.click(); setTimeout(() => URL.revokeObjectURL(u), 3000); };
+      const v = el("button", "btn sm", "View"); v.onclick = async () => { const r = await api("/api/files/" + encodeURIComponent(S.chat.id) + "/" + f.path.split("/").map(encodeURIComponent).join("/")); const t = await r.text(); modal("<h3 style='margin-top:0'>" + esc(f.path) + "</h3><pre class='diff'>" + esc(t.slice(0, 60000)) + "</pre>", [["Close", null]]).querySelector(".row .btn").onclick = closeModal; };
+      const g = el("span", "row"); g.append(v, b); row.appendChild(g); body.appendChild(row); });
+  } catch (e) {}
+}
+</script>
+</body>
+</html>
